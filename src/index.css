@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-50: #f0f6f3;
+  --color-brand-100: #ddebdf;
+  --color-brand-200: #bedfcb;
+  --color-brand-300: #91ccac;
+  --color-brand-400: #5db389;
+  --color-brand-500: #244F3B;
+  --color-brand-600: #1e4231;
+  --color-brand-700: #183526;
+  --color-brand-800: #12281d;
+  --color-brand-900: #0d1b14;
+
+  --color-secondary-50: #fff9f3;
+  --color-secondary-100: #fef0db;
+  --color-secondary-200: #fde0b0;
+  --color-secondary-300: #fbca7c;
+  --color-secondary-400: #f8af4f;
+  --color-secondary-500: #f49c4a;
+  --color-secondary-600: #dd8134;
+  --color-secondary-700: #b86022;
+  --color-secondary-800: #924719;
+  --color-secondary-900: #753713;
+}
+
+@layer base {
+  body {
+    @apply bg-neutral-50 text-neutral-800 antialiased font-sans selection:bg-brand-100 selection:text-brand-800;
+  }
+}
+
+/* Custom styling for sleek scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-neutral-200 rounded-full hover:bg-neutral-300 transition-colors;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "MamiHubs Vendor Onboarding",
+  "description": "Multi-role orchestration dashboard for MamiHubs marketplace onboarding, featuring comprehensive analytical workflows, checklist tracking, and collaboration portals for Field Personnel, Supervisors, and Administrators.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
