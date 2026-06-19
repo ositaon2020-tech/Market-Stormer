@@ -11,31 +11,31 @@ export default function MamiHubLogo({ className = '', iconOnly = false, size = '
   const sizes = {
     sm: {
       height: 28,
-      textSize: 'text-lg',
-      spacing: 'gap-1.5',
-      iconWidth: 22,
+      textSize: 'text-xs font-bold font-mono tracking-wider',
+      spacing: 'gap-1',
+      iconWidth: 16,
     },
     md: {
       height: 38,
-      textSize: 'text-2xl',
-      spacing: 'gap-2',
-      iconWidth: 32,
+      textSize: 'text-base sm:text-lg font-black tracking-semibold',
+      spacing: 'gap-1.5',
+      iconWidth: 24,
     },
     lg: {
       height: 48,
-      textSize: 'text-3xl',
-      spacing: 'gap-2.5',
-      iconWidth: 42,
+      textSize: 'text-xl sm:text-2xl font-black tracking-tight',
+      spacing: 'gap-2',
+      iconWidth: 32,
     },
   };
 
   const currentSize = sizes[size];
 
-  // The Mami Hub stylized shopping bag logo matching precisely the design provided
+  // The Market Stormer stylized shopping bag logo 
   const logoBagIcon = (
     <svg
       role="img"
-      aria-label="Mami Hub Bag Logo"
+      aria-label="Market Stormer Bag Logo"
       viewBox="0 0 100 100"
       width={currentSize.iconWidth}
       height={currentSize.iconWidth}
@@ -58,7 +58,7 @@ export default function MamiHubLogo({ className = '', iconOnly = false, size = '
       <circle cx="32" cy="32" r="3.5" fill="#f49c4a" />
       <circle cx="68" cy="32" r="3.5" fill="#f49c4a" />
 
-      {/* Stylized Accent Letter "M" inside the bag: Apricot/Orange (#f49c4a) */}
+      {/* Stylized Accent Letter "M" inside the bag representing Market */}
       <path
         d="M 28 85 L 28 44 L 38 44 L 50 64 L 62 44 L 72 44 L 72 85 L 63 85 L 63 56 L 50 75 L 37 56 L 37 85 Z"
         fill="#f49c4a"
@@ -76,17 +76,17 @@ export default function MamiHubLogo({ className = '', iconOnly = false, size = '
 
   return (
     <div className={`inline-flex items-center ${currentSize.spacing} select-none ${className}`}>
-      {/* Brand Name Prefix "MA" in bold Spruce/Deep Green */}
-      <span className={`font-display font-extrabold tracking-tight ${currentSize.textSize} text-[#244F3B] uppercase`}>
-        MA
+      {/* Brand Name Prefix "MARKET" in bold Spruce/Deep Green */}
+      <span className={`font-display font-extrabold text-[#244F3B] uppercase ${currentSize.textSize}`}>
+        MARKET
       </span>
 
       {/* Recreated Logo Bag with stylized orange M */}
       {logoBagIcon}
 
-      {/* Brand Name Suffix "I HUB" in bold Spruce/Deep Green */}
-      <span className={`font-display font-extrabold tracking-tight ${currentSize.textSize} text-[#244F3B] uppercase`}>
-        I HUB
+      {/* Brand Name Suffix "STORMER" in bold Spruce/Deep Green */}
+      <span className={`font-display font-extrabold text-[#244F3B] uppercase ${currentSize.textSize}`}>
+        STORMER
       </span>
     </div>
   );

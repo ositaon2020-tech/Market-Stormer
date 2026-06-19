@@ -393,7 +393,7 @@ export const DEMO_COURSES: TrainingCourse[] = [
   {
     id: 't-2',
     title: 'Marketplace Organic & Family Standards Audit',
-    description: 'Deep dive into MamiHubs compliance requirements. Review organic certification labels, toxic-free baby product clearances, and home kitchen sanitation standards for small scale suppliers.',
+    description: 'Deep dive into Market Stormer compliance requirements. Review organic certification labels, toxic-free baby product clearances, and home kitchen sanitation standards for small scale suppliers.',
     category: 'Product Quality',
     durationMinutes: 60,
     completedByFieldOfficers: ['u-4'],

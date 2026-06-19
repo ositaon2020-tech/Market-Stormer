@@ -21,15 +21,15 @@ function drawHeaderBanner(doc: jsPDF, titleText: string, subTitleText: string) {
   // Company Watermark text or visual identifier
   doc.setFont('Helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.text('MA', 14, 21);
+  doc.setFontSize(14);
+  doc.text('MARKET', 14, 21);
   
   // Custom Orange Dot indicator
   doc.setFillColor(SECONDARY_RGB.r, SECONDARY_RGB.g, SECONDARY_RGB.b);
-  doc.circle(28, 18, 2, 'F');
+  doc.circle(41, 18, 1.5, 'F');
   
   doc.setTextColor(255, 255, 255);
-  doc.text('I HUB', 32, 21);
+  doc.text('STORMER', 45, 21);
 
   doc.setFont('Helvetica', 'bold');
   doc.setFontSize(10);
@@ -59,7 +59,7 @@ function drawFooter(doc: jsPDF, pageNum: number) {
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(TEXT_MUTED_RGB.r, TEXT_MUTED_RGB.g, TEXT_MUTED_RGB.b);
-  doc.text('Mami Hub Nigeria • Secure Verification Apparatus Sync Report v2.4', 14, pageHeight - 10);
+  doc.text('Market Stormer Nigeria • Secure Verification Apparatus Sync Report v2.4', 14, pageHeight - 10);
   
   doc.text(`Page ${pageNum}`, 210 - 14, pageHeight - 10, { align: 'right' });
 }
@@ -251,13 +251,13 @@ export function exportVendorWeeklyReport(
   doc.setFont('Helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(TEXT_MUTED_RGB.r, TEXT_MUTED_RGB.g, TEXT_MUTED_RGB.b);
-  doc.text('Mami Hub Supervisor Signature', 14, y + 5);
+  doc.text('Market Stormer Supervisor Signature', 14, y + 5);
   doc.text('Government/Hub Executive Sign-off', 136, y + 5);
 
   drawFooter(doc, 1);
 
   // Save/Download PDF named specifically by merchant
-  doc.save(`MAMI_HUB_REPORT_${vendor.name.replace(/\s+/g, '_')}.pdf`);
+  doc.save(`MARKET_STORMER_REPORT_${vendor.name.replace(/\s+/g, '_')}.pdf`);
   return true;
 }
 
@@ -382,7 +382,7 @@ export function exportRegionWeeklyReport(
     doc.setFont('Helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(TEXT_MUTED_RGB.r, TEXT_MUTED_RGB.g, TEXT_MUTED_RGB.b);
-    doc.text(`* Showing first 16 of ${regionVendors.length} registered brands. Access the Mami Hub portal for complete audit ledger streams.`, 14, y + 2);
+    doc.text(`* Showing first 16 of ${regionVendors.length} registered brands. Access the Market Stormer portal for complete audit ledger streams.`, 14, y + 2);
   }
 
   // 3. Signature verification space
@@ -401,6 +401,6 @@ export function exportRegionWeeklyReport(
   drawFooter(doc, 1);
 
   // Save A4 PDF report
-  doc.save(`MAMI_HUB_REGION_${regionName.replace(/\s+/g, '_')}_REPORT.pdf`);
+  doc.save(`MARKET_STORMER_REGION_${regionName.replace(/\s+/g, '_')}_REPORT.pdf`);
   return true;
 }

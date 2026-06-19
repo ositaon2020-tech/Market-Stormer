@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Vendor, WeeklyVisit, Complaint, DailyReport, TrainingCourse, AuditLog, Product } from './types';
 import { DEMO_USERS, DEMO_VENDORS, DEMO_VISITS, DEMO_COMPLAINTS, DEMO_REPORTS, DEMO_COURSES, DEMO_AUDIT_LOGS } from './initialData';
+import { 
+  getSupabaseConfig, 
+  getSupabaseClient, 
+  pushStateToSupabase, 
+  pullStateFromSupabase, 
+  saveSupabaseConfig 
+} from './lib/supabase';
 
 interface OnboardingContextProps {
   currentUser: User | null;
@@ -11,6 +18,8 @@ interface OnboardingContextProps {
   reports: DailyReport[];
   courses: TrainingCourse[];
   auditLogs: AuditLog[];
+  supabaseEnabled: boolean;
+  supabaseLogs: string[];
   login: (email: string) => boolean;
   logout: () => void;
   registerVendor: (vendorData: { name: string; ownerName: string; phone: string; email: string; hubRegion: string; category: string; city: string; fieldOfficerId: string }) => Vendor;
@@ -27,6 +36,9 @@ interface OnboardingContextProps {
   addAudit: (action: string, details: string) => void;
   generateAiResolutionDraft: (complaint: Complaint) => Promise<{ resolution: string; steps: string[]; recommendedTraining?: string }>;
   generateAiOnboardingBrief: () => Promise<{ executiveSummary: string; directives: string[] }>;
+  triggerSupabasePush: () => Promise<boolean>;
+  triggerSupabasePull: () => Promise<boolean>;
+  setSupabaseEnabled: (enabled: boolean) => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextProps | undefined>(undefined);
@@ -40,6 +52,19 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [courses, setCourses] = useState<TrainingCourse[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [supabaseEnabled, setRawSupabaseEnabled] = useState<boolean>(false);
+  const [supabaseLogs, setSupabaseLogs] = useState<string[]>(['Init Supabase offline sandbox context.']);
+
+  const setSupabaseEnabled = (enabled: boolean) => {
+    setRawSupabaseEnabled(enabled);
+    const config = getSupabaseConfig();
+    saveSupabaseConfig(config.url, config.anonKey, enabled);
+    addLog(`Supabase integrations toggled to: ${enabled ? 'ACTIVE_MIRROR' : 'DISABLED'}`);
+  };
+
+  const addLog = (msg: string) => {
+    setSupabaseLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 49)]);
+  };
 
   // Initialize and load state from localStorage
   useEffect(() => {
@@ -97,11 +122,188 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (localUser) {
       setCurrentUser(JSON.parse(localUser));
     }
+
+    // Load initial Supabase enablement status
+    const config = getSupabaseConfig();
+    setRawSupabaseEnabled(config.enabled);
+    if (config.enabled) {
+      addLog(`Supabase mirror configured to server at ${config.url.slice(0, 25)}...`);
+    }
   }, []);
 
-  // Synchronizers that save back to localStorage
+  // Sync individual lists to Supabase in background
+  const syncListToSupabase = async (tableName: string, dataList: any[]) => {
+    const client = getSupabaseClient();
+    if (!client) return;
+    try {
+      if (tableName === 'users') {
+        const { error } = await client.from('users').upsert(dataList.map((u: any) => ({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          role: u.role,
+          region: u.region,
+          avatar: u.avatar,
+          phone: u.phone || null,
+          assigned_supervisor_id: u.assignedSupervisorId || null
+        })));
+        if (error) throw error;
+      } else if (tableName === 'vendors') {
+        const { error } = await client.from('vendors').upsert(dataList.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          owner_name: v.ownerName,
+          phone: v.phone,
+          email: v.email,
+          hub_region: v.hubRegion,
+          category: v.category,
+          city: v.city,
+          registered_date: v.registeredDate,
+          onboarding_step: v.onboardingStep,
+          checklist: v.checklist,
+          products: v.products,
+          orders_count: v.ordersCount,
+          inactive_days: v.inactiveDays,
+          quality_status: v.qualityStatus,
+          field_officer_id: v.fieldOfficerId,
+          last_visit_date: v.lastVisitDate || null
+        })));
+        if (error) throw error;
+      } else if (tableName === 'visits') {
+        const { error } = await client.from('visits').upsert(dataList.map((vi: any) => ({
+          id: vi.id,
+          vendor_id: vi.vendorId,
+          vendor_name: vi.vendorName,
+          supervisor_id: vi.supervisorId,
+          supervisor_name: vi.supervisorName,
+          date: vi.date,
+          duration_minutes: vi.durationMinutes,
+          notes: vi.notes,
+          checklist_reviewed: vi.checklistReviewed,
+          gps_location: vi.gpsLocation
+        })));
+        if (error) throw error;
+      } else if (tableName === 'complaints') {
+        const { error } = await client.from('complaints').upsert(dataList.map((c: any) => ({
+          id: c.id,
+          vendor_id: c.vendorId,
+          vendor_name: c.vendorName,
+          title: c.title,
+          description: c.description,
+          category: c.category,
+          created_at: c.createdAt,
+          status: c.status,
+          severity: c.severity,
+          resolution_text: c.resolutionText || null,
+          resolved_at: c.resolvedAt || null,
+          resolved_by: c.resolvedBy || null
+        })));
+        if (error) throw error;
+      } else if (tableName === 'reports') {
+        const { error } = await client.from('reports').upsert(dataList.map((r: any) => ({
+          id: r.id,
+          field_officer_id: r.fieldOfficerId,
+          field_officer_name: r.fieldOfficerName,
+          date: r.date,
+          vendors_onboarded_count: r.vendorsOnboardedCount,
+          steps_completed_count: r.stepsCompletedCount,
+          summary: r.summary,
+          challenges: r.challenges,
+          status: r.status,
+          supervisor_notes: r.supervisor_notes || null
+        })));
+        if (error) throw error;
+      } else if (tableName === 'courses') {
+        const { error } = await client.from('courses').upsert(dataList.map((co: any) => ({
+          id: co.id,
+          title: co.title,
+          description: co.description,
+          category: co.category,
+          duration_minutes: co.durationMinutes,
+          completed_by_field_officers: co.completedByFieldOfficers
+        })));
+        if (error) throw error;
+      } else if (tableName === 'audit_logs') {
+        const { error } = await client.from('audit_logs').upsert(dataList.slice(0, 50).map((au: any) => ({
+          id: au.id,
+          timestamp: au.timestamp,
+          user_id: au.userId,
+          user_name: au.userName,
+          user_role: au.userRole,
+          action: au.action,
+          details: au.details
+        })));
+        if (error) throw error;
+      }
+      addLog(`✓ Supabase background sync: Table [${tableName}] mirrored successfully.`);
+    } catch (err: any) {
+      console.warn(`Supabase background sync for ${tableName} failed/skipped:`, err.message);
+      addLog(`⚡ Supabase sync skipped: Table [${tableName}] (${err.message.slice(0, 30)}...). Is schema deployed?`);
+    }
+  };
+
+  // Synchronizers that save back to localStorage and replicate to Supabase
   const saveState = (key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data));
+    
+    // Auto-map state keys to Supabase tables
+    const mapKeyToTable: Record<string, string> = {
+      'm_users': 'users',
+      'm_vendors': 'vendors',
+      'm_visits': 'visits',
+      'm_complaints': 'complaints',
+      'm_reports': 'reports',
+      'm_courses': 'courses',
+      'm_audits': 'audit_logs'
+    };
+    
+    const table = mapKeyToTable[key];
+    if (table && supabaseEnabled) {
+      syncListToSupabase(table, data);
+    }
+  };
+
+  // Explicit sync actions
+  const triggerSupabasePush = async (): Promise<boolean> => {
+    addLog('Pushing entire state to Supabase database...');
+    const result = await pushStateToSupabase({
+      users,
+      vendors,
+      visits,
+      complaints,
+      reports,
+      courses,
+      auditLogs
+    });
+    
+    result.log.forEach(msg => {
+      addLog(msg);
+    });
+    
+    return result.success;
+  };
+
+  const triggerSupabasePull = async (): Promise<boolean> => {
+    addLog('Querying data streams from Supabase database...');
+    const result = await pullStateFromSupabase();
+    
+    if (result.success && result.data) {
+      const { users: u, vendors: v, visits: vi, complaints: c, reports: r, courses: co, auditLogs: al } = result.data;
+      
+      if (u.length > 0) { setUsers(u); localStorage.setItem('m_users', JSON.stringify(u)); }
+      if (v.length > 0) { setVendors(v); localStorage.setItem('m_vendors', JSON.stringify(v)); }
+      if (vi.length > 0) { setVisits(vi); localStorage.setItem('m_visits', JSON.stringify(vi)); }
+      if (c.length > 0) { setComplaints(c); localStorage.setItem('m_complaints', JSON.stringify(c)); }
+      if (r.length > 0) { setReports(r); localStorage.setItem('m_reports', JSON.stringify(r)); }
+      if (co.length > 0) { setCourses(co); localStorage.setItem('m_courses', JSON.stringify(co)); }
+      if (al.length > 0) { setAuditLogs(al); localStorage.setItem('m_audits', JSON.stringify(al)); }
+      
+      addLog('✓ Data successfully pulled and integrated into client workspace.');
+      return true;
+    } else {
+      addLog(`❌ Pull failed or table schemas do not exist: ${result.error || 'Connection incomplete'}`);
+      return false;
+    }
   };
 
   const addAudit = (action: string, details: string) => {
@@ -505,7 +707,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (err) {
       console.error(err);
       return {
-        executiveSummary: "MamiHubs onboarding pipelines show steady initial traction. Key product-listing challenges remain the primary friction point across East and Central regional hubs.",
+        executiveSummary: "Market Stormer onboarding pipelines show steady initial traction. Key product-listing challenges are being proactively managed across East and Central regional hubs.",
         directives: [
           'Direct David Cole to target текстиles vendors for photography support.',
           'Supervisors should host a weekly Zoom workshop on packaging and label printing.',
@@ -525,6 +727,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       reports,
       courses,
       auditLogs,
+      supabaseEnabled,
+      supabaseLogs,
       login,
       logout,
       registerVendor,
@@ -541,6 +745,9 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       addAudit,
       generateAiResolutionDraft,
       generateAiOnboardingBrief,
+      triggerSupabasePush,
+      triggerSupabasePull,
+      setSupabaseEnabled,
     }}>
       {children}
     </OnboardingContext.Provider>

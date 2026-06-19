@@ -25,7 +25,7 @@ app.post("/api/ai/suggest-resolution", async (req, res) => {
       // Fallback response for offline or unconfigured environment
       console.warn("GEMINI_API_KEY is not configured. Serving high-fidelity simulated response.");
       return res.json({
-        resolution: `Dear ${vendorName},\n\nWe understand your concern regarding "${title}". As a valued MamiHubs micro-merchant, we want to ensure your operations run smoothly.\n\nSimulated Action Plan:\n1. Dedicated field assistance will reach out within 2 hours to clear any pipeline blocks.\n2. Technical support will trace physical or cache errors corresponding to your ${category} issue.\n3. We have marked this ticket as ${severity.toUpperCase()} and notified your direct hub supervisor.`,
+        resolution: `Dear ${vendorName},\n\nWe understand your concern regarding "${title}". As a valued Market Stormer independent merchant, we want to ensure your operations run smoothly.\n\nSimulated Action Plan:\n1. Dedicated field assistance will reach out within 2 hours to clear any pipeline blocks.\n2. Technical support will trace physical or cache errors corresponding to your ${category} issue.\n3. We have marked this ticket as ${severity.toUpperCase()} and notified your direct hub supervisor.`,
         suggestedTraining: "Marketplace Organic & Family Standards Audit",
         greetingHint: "Empathetic Community Tone"
       });
@@ -33,15 +33,15 @@ app.post("/api/ai/suggest-resolution", async (req, res) => {
 
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `
-      You are an expert Onboarding Director for MamiHubs (a community-focused family and mom-merchant marketplace.
-      A micro-merchant named "${vendorName}" has logged a complaint. Here are the details:
+      You are an expert Onboarding Director for Market Stormer (a robust community-focused merchant marketplace).
+      A merchant named "${vendorName}" has logged a complaint. Here are the details:
       - Title: ${title}
       - Category: ${category}
       - Severity: ${severity}
       - Description: ${description}
 
       A supervisor needs to resolve this complaint. Provide:
-      1. A professional, highly empathetic response to draft and send to the maternal merchant. Match the warm, community-first tone of MamiHubs.
+      1. A professional, highly empathetic response to draft and send to the merchant. Match the warm, community-first tone of Market Stormer.
       2. A concise 3-step action roadmap for the field officer to execute physically or digitally.
       3. Recommend which of these 4 training modules the officer should take to prevent this issue in the future:
          - "High-Touch Micro-Merchant Empathy"
@@ -96,7 +96,7 @@ app.post("/api/ai/onboarding-brief", async (req, res) => {
 
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `
-      You are the Global Admin Strategist of MamiHubs (family/maternity focused marketplace).
+      You are the Global Admin Strategist of Market Stormer (an online unified merchant onboarding platform).
       Analyze these aggregate vendor onboarding performance statistics:
       - Total Registered Vendors: ${registeredCount}
       - Currently Active (order logged): ${activeCount}
@@ -105,7 +105,7 @@ app.post("/api/ai/onboarding-brief", async (req, res) => {
 
       Generate:
       1. A brief 1-paragraph community executive summary.
-      2. 3 concrete strategic directives for supervisors to optimize onboarding velocity. Focus on helping home-based mompreneurs overcome technical barriers.
+      2. 3 concrete strategic directives for supervisors to optimize onboarding velocity. Focus on helping merchants overcome technical barriers.
 
       Respond strictly in JSON format matching this schema:
       {

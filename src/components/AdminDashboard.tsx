@@ -5,10 +5,11 @@ import {
   ShieldCheck, LayoutDashboard, ScrollText, Users, Building, 
   Sparkles, CheckCircle2, ChevronRight, Activity, Search, RefreshCw,
   Lightbulb, Landmark, TrendingUp, AlertTriangle, LogOut, ArrowRight, BookOpen,
-  Clock, Eye, FileDown, Printer, SlidersHorizontal, Map
+  Clock, Eye, FileDown, Printer, SlidersHorizontal, Map, CloudLightning
 } from 'lucide-react';
 import MamiHubLogo from './MamiHubLogo';
 import { exportVendorWeeklyReport, exportRegionWeeklyReport } from '../utils/pdfExport';
+import SupabaseSyncPanel from './SupabaseSyncPanel';
 
 export default function AdminDashboard() {
   const { 
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
   } = useOnboarding();
 
   const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'personnel' | 'audit_logs' | 'pdf_exports'>('analytics');
+  const [showSupabaseHub, setShowSupabaseHub] = useState(false);
   
   // PDF Export states
   const [selectedPdfRegion, setSelectedPdfRegion] = useState('');
@@ -162,6 +164,16 @@ export default function AdminDashboard() {
                   <p className="text-[10px] text-neutral-400 font-mono">Global Operations Director</p>
                 </div>
               </div>
+              
+              <button 
+                onClick={() => setShowSupabaseHub(true)}
+                className="px-3 py-1 text-xs font-semibold rounded-lg border border-[#3ecf8e]/30 bg-[#3ecf8e]/10 hover:bg-[#3ecf8e]/20 text-neutral-800 hover:text-black transition-all flex items-center gap-1 shadow-xs"
+                id="header-open-supabase-btn-admin"
+              >
+                <CloudLightning className="w-3.5 h-3.5 text-[#3ecf8e] animate-pulse" />
+                <span>Supabase Secure Hub</span>
+              </button>
+
               <button 
                 onClick={logout}
                 className="p-1 px-3 text-xs font-medium text-neutral-500 hover:text-rose-600 border border-neutral-200 hover:border-rose-100 rounded-lg transition-all flex items-center gap-1.5 bg-neutral-50 hover:bg-rose-50/20"
@@ -799,7 +811,7 @@ export default function AdminDashboard() {
                       Verify Individual Merchant
                     </h4>
                     <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
-                      Select any merchant registered on the Mami Hub ledger nationwide to download a micro-check progress dossier.
+                      Select any merchant registered on the Market Stormer ledger nationwide to download a micro-check progress dossier.
                     </p>
 
                     <div className="mt-4">
@@ -866,6 +878,13 @@ export default function AdminDashboard() {
           </div>
         )}
       </main>
+
+      {/* Supabase Integration Hub Model Slider overlay */}
+      {showSupabaseHub && (
+        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <SupabaseSyncPanel onClose={() => setShowSupabaseHub(false)} />
+        </div>
+      )}
     </div>
   );
 }

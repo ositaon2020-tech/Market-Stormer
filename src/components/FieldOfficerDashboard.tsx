@@ -5,9 +5,10 @@ import {
   Building2, Plus, Calendar, BookOpen, ScrollText, CheckSquare, 
   MapPin, Phone, Mail, ShoppingBag, FolderHeart, AlertCircle,
   TrendingUp, Compass, LogOut, Check, ArrowRight, Package, CircleDot, RefreshCw,
-  Camera, Image
+  Camera, Image, CloudLightning
 } from 'lucide-react';
 import MamiHubLogo from './MamiHubLogo';
+import SupabaseSyncPanel from './SupabaseSyncPanel';
 
 export default function FieldOfficerDashboard() {
   const { 
@@ -25,6 +26,7 @@ export default function FieldOfficerDashboard() {
     toggleFieldOfficerTraining
   } = useOnboarding();
 
+  const [showSupabaseHub, setShowSupabaseHub] = useState(false);
   const [activeTab, setActiveTab] = useState<'vendors' | 'daily_report' | 'training'>('vendors');
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   
@@ -71,7 +73,7 @@ export default function FieldOfficerDashboard() {
       name: regName,
       ownerName: regOwner,
       phone: regPhone || '+1 (555) 000-0000',
-      email: regEmail || `${regOwner.toLowerCase().replace(/\s+/g, '')}@mamihubsmail.com`,
+      email: regEmail || `${regOwner.toLowerCase().replace(/\s+/g, '')}@marketstormermail.com`,
       hubRegion: currentUser?.region || 'Global Hub',
       category: regCat,
       city: regCity,
@@ -214,6 +216,16 @@ export default function FieldOfficerDashboard() {
                   <p className="text-[10px] text-neutral-400 font-mono">Assigned Partner</p>
                 </div>
               </div>
+
+              <button 
+                onClick={() => setShowSupabaseHub(true)}
+                className="px-3 py-1 text-xs font-semibold rounded-lg border border-[#3ecf8e]/30 bg-[#3ecf8e]/10 hover:bg-[#3ecf8e]/20 text-neutral-800 hover:text-black transition-all flex items-center gap-1 shadow-xs"
+                id="header-open-supabase-btn-officer"
+              >
+                <CloudLightning className="w-3.5 h-3.5 text-[#3ecf8e] animate-pulse" />
+                <span>Supabase Secure Hub</span>
+              </button>
+
               <button 
                 onClick={logout}
                 className="p-1 px-3 text-xs font-medium text-neutral-500 hover:text-rose-600 border border-neutral-200 hover:border-rose-100 rounded-lg transition-all flex items-center gap-1.5 bg-neutral-50 hover:bg-rose-50/20"
@@ -274,7 +286,7 @@ export default function FieldOfficerDashboard() {
             <div className="lg:col-span-5 bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-xs">
               <div className="p-4 bg-linear-to-r from-neutral-50 to-neutral-100 border-b border-neutral-200 flex items-center justify-between">
                 <div>
-                  <h3 className="font-display font-semibold text-neutral-800">Mami Micro-merchants</h3>
+                  <h3 className="font-display font-semibold text-neutral-800">Market Stormer Merchants</h3>
                   <p className="text-[11px] text-neutral-500">Pipeline coordination index</p>
                 </div>
                 <button
@@ -512,7 +524,7 @@ export default function FieldOfficerDashboard() {
                     <div className="border-b border-neutral-100 pb-3 mb-4">
                       <h4 className="font-display font-semibold text-sm text-neutral-900 flex items-center gap-1.5">
                         <Package className="w-4 h-4 text-brand-500" />
-                        Upload Product Profile (MamiHubs Compliance Check)
+                        Upload Product Profile (Market Stormer Compliance Check)
                       </h4>
                       <p className="text-[11px] text-neutral-500">
                         Listing products automatically satisfies <em>CHKP_3</em> (First product) and <em>CHKP_4</em> (Min 10 products: listed total: {selectedVendor.products.length})
@@ -812,7 +824,7 @@ export default function FieldOfficerDashboard() {
               <div>
                 <h3 className="font-display font-semibold text-neutral-800 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-brand-500" />
-                  MamiHubs Officer Curriculum
+                  Market Stormer Officer Curriculum
                 </h3>
                 <p className="text-xs text-neutral-500">Ensure high-touch care standards and compliance thresholds</p>
               </div>
@@ -883,7 +895,7 @@ export default function FieldOfficerDashboard() {
             <div className="border-b border-neutral-100 pb-3 mb-4">
               <h3 className="font-display font-semibold text-neutral-900 text-base flex items-center gap-1.5">
                 <Building2 className="w-5 h-5 text-brand-500" />
-                Register Mami Hub Vendor
+                Register Market Stormer Vendor
               </h3>
               <p className="text-xs text-neutral-500">Initiates <em>CHKP_1</em> onboarding milestone under your account</p>
             </div>
@@ -899,7 +911,7 @@ export default function FieldOfficerDashboard() {
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
                   className="w-full px-3 py-2 bg-neutral-100 border border-neutral-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-brand-500 focus:bg-white transition-all font-medium"
-                  placeholder="Mami Organic Cotton Cloaks"
+                  placeholder="Organic Cotton Clothing"
                 />
               </div>
 
@@ -1112,6 +1124,13 @@ export default function FieldOfficerDashboard() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Supabase Integration Hub Model Slider overlay */}
+      {showSupabaseHub && (
+        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <SupabaseSyncPanel onClose={() => setShowSupabaseHub(false)} />
         </div>
       )}
     </div>
