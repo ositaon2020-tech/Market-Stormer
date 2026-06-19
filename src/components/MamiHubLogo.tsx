@@ -4,9 +4,10 @@ interface MamiHubLogoProps {
   className?: string;
   iconOnly?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  light?: boolean;
 }
 
-export default function MamiHubLogo({ className = '', iconOnly = false, size = 'md' }: MamiHubLogoProps) {
+export default function MamiHubLogo({ className = '', iconOnly = false, size = 'md', light = false }: MamiHubLogoProps) {
   // Define dimensions based on size
   const sizes = {
     sm: {
@@ -77,7 +78,7 @@ export default function MamiHubLogo({ className = '', iconOnly = false, size = '
   return (
     <div className={`inline-flex items-center ${currentSize.spacing} select-none ${className}`}>
       {/* Brand Name Prefix "MARKET" in bold Spruce/Deep Green */}
-      <span className={`font-display font-extrabold text-[#244F3B] uppercase ${currentSize.textSize}`}>
+      <span className={`font-display font-extrabold ${light ? 'text-[#3ecf8e]' : 'text-[#244F3B]'} uppercase ${currentSize.textSize}`}>
         MARKET
       </span>
 
@@ -85,7 +86,7 @@ export default function MamiHubLogo({ className = '', iconOnly = false, size = '
       {logoBagIcon}
 
       {/* Brand Name Suffix "STORMER" in bold Spruce/Deep Green */}
-      <span className={`font-display font-extrabold text-[#244F3B] uppercase ${currentSize.textSize}`}>
+      <span className={`font-display font-extrabold ${light ? 'text-[#e5fcf4]' : 'text-[#244F3B]'} uppercase ${currentSize.textSize}`}>
         STORMER
       </span>
     </div>

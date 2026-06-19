@@ -275,6 +275,12 @@ export async function pushStateToSupabase(state: {
     return { success: true, log };
   } catch (err: any) {
     log.push(`❌ CRITICAL FAILURE during sync: ${err.message}`);
+    const isSchemaError = err.message.toLowerCase().includes('schema cache') || 
+                          err.message.toLowerCase().includes('not find the table') || 
+                          err.message.toLowerCase().includes('does not exist');
+    if (isSchemaError) {
+      log.push("💡 TIP: The connected database is missing tables or cache is stale. Go to 'Postgres SQL Setup' tab in the Supabase sync panel, copy the SQL DDL, execute it in your Supabase SQL Editor, and then execute: NOTIFY pgrst, 'reload schema';");
+    }
     return { success: false, log };
   }
 }
@@ -299,33 +305,88 @@ export async function pullStateFromSupabase(): Promise<{
   }
 
   try {
-    // 1. Pull users
-    const { data: usersData, error: uErr } = await client.from('users').select('*');
-    if (uErr) throw new Error(`Users Pull Failed: ${uErr.message}`);
+  let usersData: any[] = [];
+  let vendorsData: any[] = [];
+  let visitsData: any[] = [];
+  let complaintsData: any[] = [];
+  let reportsData: any[] = [];
+  let coursesData: any[] = [];
+  let auditsData: any[] = [];
+
+  const handleFetchError = (err: any, label: string) => {
+    const isSchemaError = err.message.toLowerCase().includes('schema cache') || 
+                          err.message.toLowerCase().includes('not find the table') || 
+                          err.message.toLowerCase().substring(0, 45).includes('could not find the table') ||
+                          err.message.toLowerCase().includes('does not exist');
+    if (isSchemaError) {
+      console.warn(`Supabase sync skipped: Table for [${label}] does not exist in the schema cache. Deploy SQL schema first.`);
+    } else {
+      throw err;
+    }
+  };
+
+  // 1. Pull users
+    try {
+      const { data, error } = await client.from('users').select('*');
+      if (error) throw error;
+      usersData = data || [];
+    } catch (err: any) {
+      handleFetchError(err, 'users');
+    }
 
     // 2. Pull vendors
-    const { data: vendorsData, error: vErr } = await client.from('vendors').select('*');
-    if (vErr) throw new Error(`Vendors Pull Failed: ${vErr.message}`);
+    try {
+      const { data, error } = await client.from('vendors').select('*');
+      if (error) throw error;
+      vendorsData = data || [];
+    } catch (err: any) {
+      handleFetchError(err, 'vendors');
+    }
 
     // 3. Pull visits
-    const { data: visitsData, error: viErr } = await client.from('visits').select('*');
-    if (viErr) throw new Error(`Visits Pull Failed: ${viErr.message}`);
+    try {
+      const { data, error } = await client.from('visits').select('*');
+      if (error) throw error;
+      visitsData = data || [];
+    } catch (err: any) {
+      handleFetchError(err, 'visits');
+    }
 
     // 4. Pull complaints
-    const { data: complaintsData, error: cErr } = await client.from('complaints').select('*');
-    if (cErr) throw new Error(`Complaints Pull Failed: ${cErr.message}`);
+    try {
+      const { data, error } = await client.from('complaints').select('*');
+      if (error) throw error;
+      complaintsData = data || [];
+    } catch (err: any) {
+      handleFetchError(err, 'complaints');
+    }
 
     // 5. Pull reports
-    const { data: reportsData, error: rErr } = await client.from('reports').select('*');
-    if (rErr) throw new Error(`Reports Pull Failed: ${rErr.message}`);
+    try {
+      const { data, error } = await client.from('reports').select('*');
+      if (error) throw error;
+      reportsData = data || [];
+    } catch (err: any) {
+      handleFetchError(err, 'reports');
+    }
 
     // 6. Pull courses
-    const { data: coursesData, error: coErr } = await client.from('courses').select('*');
-    if (coErr) throw new Error(`Courses Pull Failed: ${coErr.message}`);
+    try {
+      const { data, error } = await client.from('courses').select('*');
+      if (error) throw error;
+      coursesData = data || [];
+    } catch (err: any) {
+      handleFetchError(err, 'courses');
+    }
 
     // 7. Pull audit logs
-    const { data: auditsData, error: auErr } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
-    if (auErr) throw new Error(`Audit Logs Pull Failed: ${auErr.message}`);
+    try {
+      const { data, error } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
+      if (error) throw error;
+      auditsData = data || [];
+    } catch (err: any) {
+      handleFetchError(err, 'audit_logs');
+    }
 
     return {
       success: true,
@@ -566,6 +627,9 @@ INSERT INTO public.users (id, email, name, role, region, avatar) VALUES
 ('u-3', 'marcus@mamihubs.com', 'Marcus Vance', 'supervisor', 'Central Hub', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150'),
 ('u-4', 'david@mamihubs.com', 'David Cole', 'field_personnel', 'East Hub', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150')
 ON CONFLICT (id) DO NOTHING;
+
+-- 9. Force PostgREST cache reload to resolve any 'not in schema cache' errors immediately
+NOTIFY pgrst, 'reload schema';
 `;
 
 // ----------------------------------------------------

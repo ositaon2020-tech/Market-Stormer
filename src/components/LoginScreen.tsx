@@ -1,19 +1,52 @@
 import React, { useState } from 'react';
 import { useOnboarding } from '../state';
-import { ShieldCheck, UserCircle, Users, Compass, Mail, Lock, Sparkles, ArrowRight, ArrowLeft, KeySquare } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  UserCircle, 
+  Users, 
+  Compass, 
+  Mail, 
+  Lock, 
+  Sparkles, 
+  ArrowRight, 
+  ArrowLeft, 
+  KeySquare, 
+  KeyRound, 
+  Globe, 
+  Phone, 
+  User as UserIcon, 
+  Activity 
+} from 'lucide-react';
 import { DEMO_USERS } from '../initialData';
 import MamiHubLogo from './MamiHubLogo';
+import { supabase, getSupabaseConfig } from '../lib/supabase';
 
 type PortalRole = 'field_personnel' | 'supervisor' | 'admin';
 
 export default function LoginScreen() {
   const { login } = useOnboarding();
   const [selectedPortal, setSelectedPortal] = useState<PortalRole | null>(null);
+  const [activeTab, setActiveTab] = useState<'supabase' | 'demo'>('demo');
+  const [isSignUp, setIsSignUp] = useState(false);
+  
+  // Standard Auth form inputs
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [region, setRegion] = useState('East Region');
+  const [phone, setPhone] = useState('');
+  
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Read current Supabase status
+  const isSupabaseConfigured = () => {
+    const config = getSupabaseConfig();
+    return config.enabled && config.url && !config.url.includes('placeholder-project-id');
+  };
+
+  const handleSandboxSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       setError('Please enter your email address.');
@@ -48,6 +81,107 @@ export default function LoginScreen() {
         setError('');
       }
     }, 450);
+  };
+
+  const handleSupabaseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+    
+    if (!email || !password) {
+      setError('Please provide both email and password.');
+      return;
+    }
+
+    if (!isSupabaseConfigured()) {
+      setError('Supabase credentials are not configured yet. Please set VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY in your .env file, or use the "Sandbox Bypass" tab.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (isSignUp) {
+        if (!name) {
+          setError('Please provide your full name.');
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error: signUpErr } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name,
+              role: selectedPortal,
+              region,
+              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
+              phone
+            }
+          }
+        });
+
+        if (signUpErr) {
+          setError(signUpErr.message);
+          return;
+        }
+
+        if (data.user) {
+          if (data.session) {
+            login(email, {
+              name,
+              role: selectedPortal!,
+              region,
+              avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`
+            });
+          } else {
+            setSuccessMsg('Account registered successfully! Check your inbox for confirmation details, or sign in below.');
+            setIsSignUp(false);
+            setPassword('');
+          }
+        }
+      } else {
+        // Sign In
+        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (signInErr) {
+          setError(signInErr.message);
+          return;
+        }
+
+        if (data.user) {
+          const meta = data.user.user_metadata || {};
+          const userRole = meta.role || selectedPortal;
+          const userName = meta.name || email.split('@')[0];
+          const userRegion = meta.region || 'East Region';
+          const userAvatar = meta.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`;
+
+          if (userRole !== selectedPortal) {
+            const properPortalName = 
+              userRole === 'admin' ? 'Global Admin Console' : 
+              userRole === 'supervisor' ? 'Hub Supervisor CRM' : 
+              'Field Officer Intake Terminal';
+            setError(`Access Rejected: This Supabase profile carries "${(userRole || '').replace('_', ' ').toUpperCase()}" authority. Use the ${properPortalName} instead.`);
+            await supabase.auth.signOut();
+            return;
+          }
+
+          login(email, {
+            name: userName,
+            role: userRole,
+            region: userRegion,
+            avatar: userAvatar
+          });
+        }
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Verification or database sync failed.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleQuickLogin = (demoEmail: string) => {
@@ -100,8 +234,9 @@ export default function LoginScreen() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* FIELD OFFICER CARD */}
               <button 
-                onClick={() => { setSelectedPortal('field_personnel'); setEmail(''); setError(''); }}
-                className="group p-6 border border-sky-100 hover:border-sky-300 bg-sky-50/5 hover:bg-sky-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden"
+                onClick={() => { setSelectedPortal('field_personnel'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('demo'); }}
+                className="group p-6 border border-sky-100 hover:border-sky-300 bg-sky-50/5 hover:bg-sky-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden cursor-pointer"
+                id="portal-select-officer"
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-sky-100/30 rounded-bl-full pointer-events-none" />
                 <div>
@@ -125,8 +260,9 @@ export default function LoginScreen() {
 
               {/* SUPERVISOR CARD */}
               <button 
-                onClick={() => { setSelectedPortal('supervisor'); setEmail(''); setError(''); }}
-                className="group p-6 border border-emerald-100 hover:border-emerald-300 bg-emerald-50/5 hover:bg-emerald-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden"
+                onClick={() => { setSelectedPortal('supervisor'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('demo'); }}
+                className="group p-6 border border-emerald-100 hover:border-emerald-300 bg-emerald-50/5 hover:bg-emerald-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden cursor-pointer"
+                id="portal-select-supervisor"
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-100/30 rounded-bl-full pointer-events-none" />
                 <div>
@@ -150,8 +286,9 @@ export default function LoginScreen() {
 
               {/* ADMIN CARD */}
               <button 
-                onClick={() => { setSelectedPortal('admin'); setEmail(''); setError(''); }}
-                className="group p-6 border border-rose-100 hover:border-rose-300 bg-rose-50/5 hover:bg-rose-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden"
+                onClick={() => { setSelectedPortal('admin'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('demo'); }}
+                className="group p-6 border border-rose-100 hover:border-rose-300 bg-rose-50/5 hover:bg-rose-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden cursor-pointer"
+                id="portal-select-admin"
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-rose-100/30 rounded-bl-full pointer-events-none" />
                 <div>
@@ -180,8 +317,10 @@ export default function LoginScreen() {
             {/* Nav Back Header */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-100">
               <button 
+                type="button"
                 onClick={() => setSelectedPortal(null)}
-                className="flex items-center gap-1 text-xs font-bold text-neutral-400 hover:text-neutral-700 transition-colors"
+                className="flex items-center gap-1 text-xs font-bold text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                id="exit-portal-btn"
               >
                 <ArrowLeft className="w-4 h-4" /> Exit Portal Gate
               </button>
@@ -202,129 +341,329 @@ export default function LoginScreen() {
                 {selectedPortal === 'field_personnel' && '🗺️ Field Officer Intake Terminal'}
               </h2>
               <p className="text-xs text-neutral-500 mt-1">
-                Authorized sandbox identity confirmation required
+                Authorized credentials confirmation required
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="p_email" className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
-                  Coordinator Identity Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <input
-                    id="p_email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setError('');
-                    }}
-                    className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium transition-all"
-                    placeholder={
-                      selectedPortal === 'admin' ? 'admin@mamihubs.com' :
-                      selectedPortal === 'supervisor' ? 'sarah@mamihubs.com' :
-                      'david@mamihubs.com'
-                    }
-                  />
-                </div>
-                {error && (
-                  <p className="text-xs text-rose-500 font-semibold mt-2.5 leading-relaxed bg-rose-50 p-2 rounded border border-rose-100 flex items-start gap-1 p-2.5">
-                    ⚠️ {error}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
-                  Decentralized Sandbox Token
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="password"
-                    disabled
-                    value="••••••••••••••"
-                    className="w-full pl-9 pr-4 py-2.5 bg-neutral-50/50 border border-neutral-100 rounded-xl text-sm text-neutral-400 select-none cursor-not-allowed"
-                  />
-                </div>
-                <p className="text-[10px] text-neutral-400 mt-1.5 italic">
-                  * Passwordless secure sandbox bypass active.
-                </p>
-              </div>
-
+            {/* Custom dual Mode authentication tabs */}
+            <div className="flex border border-neutral-200 mb-6 bg-neutral-50 p-1 rounded-xl">
               <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full text-white font-semibold text-sm py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-75 focus:outline-hidden focus:ring-2 focus:ring-offset-2 ${
-                  selectedPortal === 'admin' ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-400' :
-                  selectedPortal === 'supervisor' ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-400' :
-                  'bg-sky-600 hover:bg-sky-700 focus:ring-sky-400'
+                type="button"
+                onClick={() => { setActiveTab('supabase'); setError(''); setSuccessMsg(''); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'supabase'
+                    ? 'bg-neutral-900 text-white shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-900'
                 }`}
+                id="tab-select-supabase-auth"
               >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    Decrypt Console Entry
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
+                🔐 Supabase Database Auth
               </button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-neutral-100">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                  Authorized Port profiles
-                </span>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-brand-50 text-[9px] text-brand-700 font-bold border border-brand-100">
-                  <Sparkles className="w-3 h-3 animate-pulse" /> Sandbox
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2.5">
-                {activeDemoUsers.map((user) => (
-                  <button
-                    key={user.id}
-                    onClick={() => handleQuickLogin(user.email)}
-                    disabled={isLoading}
-                    className="w-full text-left flex items-center justify-between p-2.5 rounded-xl border border-neutral-100 hover:border-brand-200 bg-neutral-50/50 hover:bg-white transition-all group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        referrerPolicy="no-referrer"
-                        className="w-7 h-7 rounded-full border border-neutral-200 object-cover"
-                      />
-                      <div>
-                        <h4 className="text-xs font-semibold text-neutral-800 leading-tight group-hover:text-brand-600 transition-colors">
-                          {user.name}
-                        </h4>
-                        <p className="text-[10px] text-neutral-400 font-mono">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="inline-block px-1.5 py-0.5 rounded-xs text-[9px] font-bold text-neutral-500 bg-neutral-100 border border-neutral-200 font-mono">
-                        {user.region}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => { setActiveTab('demo'); setError(''); setSuccessMsg(''); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'demo'
+                    ? 'bg-neutral-900 text-white shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-900'
+                }`}
+                id="tab-select-sandbox-auth"
+              >
+                ⚡ Sandbox Bypass
+              </button>
             </div>
+
+            {/* NOTIFICATORS */}
+            {error && (
+              <div className="text-xs text-rose-500 font-semibold mb-4 leading-relaxed bg-rose-50 p-3 rounded-xl border border-rose-100 flex items-start gap-2 animate-in fade-in duration-150">
+                <span>⚠️</span>
+                <p className="flex-1">{error}</p>
+              </div>
+            )}
+
+            {successMsg && (
+              <div className="text-xs text-emerald-700 font-semibold mb-4 leading-relaxed bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex items-start gap-2 animate-in fade-in duration-150">
+                <span>✓</span>
+                <p className="flex-1">{successMsg}</p>
+              </div>
+            )}
+
+            {activeTab === 'supabase' ? (
+              /* LIVE SUPABASE AUTH SYSTEM */
+              <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                {!isSupabaseConfigured() && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] leading-relaxed text-amber-800 flex gap-1.5 mb-4">
+                    <span>⚠️</span>
+                    <p className="flex-1">
+                      <strong>Supabase is currently offline.</strong> Secure connection keys are unconfigured. To test real-time accounts database registration, provide keys in your local variables or use the <strong>Sandbox Bypass</strong> tab.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between px-1 mb-1.5">
+                  <span className="text-[11px] font-bold text-neutral-500 uppercase">
+                    {isSignUp ? 'New Credential Generation' : 'Existing Credential Sign In'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setIsSignUp(!isSignUp); setError(''); setSuccessMsg(''); }}
+                    className="text-xs font-bold text-brand-600 hover:text-brand-800 underline active:scale-95 transition-all"
+                    id="toggle-auth-signup-signin"
+                  >
+                    {isSignUp ? 'Sign in with existing profile' : 'Deploy new live coordinator profile'}
+                  </button>
+                </div>
+
+                <form onSubmit={handleSupabaseSubmit} className="space-y-3.5">
+                  {isSignUp && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                          Full Coordinator Name
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                            <UserIcon className="w-4 h-4" />
+                          </div>
+                          <input
+                            type="text"
+                            required
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium transition-all"
+                            placeholder="Olumide Benson"
+                            id="supabase-signup-name"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                            Trade District
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                              <Globe className="w-4 h-4" />
+                            </div>
+                            <select
+                              value={region}
+                              onChange={(e) => setRegion(e.target.value)}
+                              className="w-full pl-9 pr-3 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-xs font-bold transition-all"
+                              id="supabase-signup-region"
+                            >
+                              <option value="East Region">East Region</option>
+                              <option value="West Region">West Region</option>
+                              <option value="North Region">North Region</option>
+                              <option value="South Region">South Region</option>
+                              <option value="Lagos Central Hub">Lagos Central Hub</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                            Contact Phone
+                          </label>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                              <Phone className="w-4 h-4" />
+                            </div>
+                            <input
+                              type="tel"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-semibold transition-all"
+                              placeholder="+234 803 123 4567"
+                              id="supabase-signup-phone"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                      Registered Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium transition-all"
+                        placeholder="coordinator@mamihubs.com"
+                        id="supabase-auth-email"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                      Live Password Code
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                        <KeyRound className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm transition-all"
+                        placeholder="••••••••••••"
+                        id="supabase-auth-password"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className={`w-full text-white font-semibold text-sm py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-75 focus:outline-hidden focus:ring-2 focus:ring-offset-2 ${
+                      selectedPortal === 'admin' ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-400' :
+                      selectedPortal === 'supervisor' ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-400' :
+                      'bg-sky-600 hover:bg-sky-700 focus:ring-sky-400'
+                    }`}
+                    id="supabase-auth-submit-btn"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        {isSignUp ? 'Generate District Profile Credentials' : 'Secure Supabase Auth Decrypt'}
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+            ) : (
+              /* SANDBOX PASSKEY BYPASS MODE (PREVIOUS CODE) */
+              <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                <form onSubmit={handleSandboxSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="p_email" className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
+                      Coordinator Identity Email
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <input
+                        id="p_email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setError('');
+                        }}
+                        className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium transition-all"
+                        placeholder={
+                          selectedPortal === 'admin' ? 'admin@mamihubs.com' :
+                          selectedPortal === 'supervisor' ? 'sarah@mamihubs.com' :
+                          'david@mamihubs.com'
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
+                      Decentralized Sandbox Token
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="password"
+                        disabled
+                        value="••••••••••••••"
+                        className="w-full pl-9 pr-4 py-2.5 bg-neutral-50/50 border border-neutral-100 rounded-xl text-sm text-neutral-400 select-none cursor-not-allowed"
+                      />
+                    </div>
+                    <p className="text-[10px] text-neutral-400 mt-1.5 italic">
+                      * Passwordless secure sandbox bypass active.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className={`w-full text-white font-semibold text-sm py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-75 focus:outline-hidden focus:ring-2 focus:ring-offset-2 cursor-pointer ${
+                      selectedPortal === 'admin' ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-400' :
+                      selectedPortal === 'supervisor' ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-400' :
+                      'bg-sky-600 hover:bg-sky-700 focus:ring-sky-400'
+                    }`}
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        Decrypt Console Entry
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {/* Quick login select list (Authorized Port profiles) */}
+                <div className="mt-8 pt-6 border-t border-neutral-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                      Authorized Port profiles
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-brand-50 text-[9px] text-brand-700 font-bold border border-brand-100">
+                      <Sparkles className="w-3 h-3 animate-pulse" /> Sandbox
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {activeDemoUsers.map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => handleQuickLogin(user.email)}
+                        disabled={isLoading}
+                        className="w-full text-left flex items-center justify-between p-2.5 rounded-xl border border-neutral-100 hover:border-brand-200 bg-neutral-50/50 hover:bg-white transition-all group cursor-pointer"
+                        id={`demo-user-button-${user.id}`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={user.avatar}
+                            alt={user.name}
+                            referrerPolicy="no-referrer"
+                            className="w-7 h-7 rounded-full border border-neutral-200 object-cover"
+                          />
+                          <div>
+                            <h4 className="text-xs font-semibold text-neutral-800 leading-tight group-hover:text-brand-600 transition-colors">
+                              {user.name}
+                            </h4>
+                            <p className="text-[10px] text-neutral-400 font-mono">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-block px-1.5 py-0.5 rounded-xs text-[9px] font-bold text-neutral-500 bg-neutral-100 border border-neutral-200 font-mono">
+                            {user.region}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
   );
 }
-

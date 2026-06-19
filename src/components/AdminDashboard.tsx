@@ -5,7 +5,8 @@ import {
   ShieldCheck, LayoutDashboard, ScrollText, Users, Building, 
   Sparkles, CheckCircle2, ChevronRight, Activity, Search, RefreshCw,
   Lightbulb, Landmark, TrendingUp, AlertTriangle, LogOut, ArrowRight, BookOpen,
-  Clock, Eye, FileDown, Printer, SlidersHorizontal, Map, CloudLightning
+  Clock, Eye, FileDown, Printer, SlidersHorizontal, Map, CloudLightning,
+  Settings, Menu, X, HelpCircle
 } from 'lucide-react';
 import MamiHubLogo from './MamiHubLogo';
 import { exportVendorWeeklyReport, exportRegionWeeklyReport } from '../utils/pdfExport';
@@ -22,11 +23,20 @@ export default function AdminDashboard() {
     users, 
     courses,
     logout,
-    generateAiOnboardingBrief
+    generateAiOnboardingBrief,
+    supabaseEnabled
   } = useOnboarding();
 
-  const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'personnel' | 'audit_logs' | 'pdf_exports'>('analytics');
+  const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'personnel' | 'audit_logs' | 'pdf_exports' | 'settings'>('analytics');
   const [showSupabaseHub, setShowSupabaseHub] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Settings state variables
+  const [autoApprove, setAutoApprove] = useState(true);
+  const [gpsRequired, setGpsRequired] = useState(false);
+  const [dualApproval, setDualApproval] = useState(true);
+  const [targetCompletions, setTargetCompletions] = useState('85');
+  const [emailAlerts, setEmailAlerts] = useState(true);
   
   // PDF Export states
   const [selectedPdfRegion, setSelectedPdfRegion] = useState('');
@@ -135,110 +145,132 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/70 text-slate-800">
-      {/* Global Admin Header */}
-      <header className="bg-white border-b border-brand-100 sticky top-0 z-20 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3.5">
-              <MamiHubLogo size="md" />
-              <div className="hidden sm:block h-6 w-px bg-neutral-200" />
-              <div className="hidden sm:block">
-                <div className="flex items-center gap-1.5">
-                  <span className="px-1.5 py-0.5 rounded-xs bg-brand-50 text-brand-800 border border-brand-100 text-[9px] font-bold uppercase tracking-wider">GLOBAL ADMIN</span>
-                </div>
-                <p className="text-[10px] text-neutral-400 font-mono mt-0.5">Control Center • {totalRegistered} brands active</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-slate-50/70 text-slate-800 flex flex-col md:flex-row">
+      
+      {/* Mobile Top Header (only on mobile) */}
+      <div className="md:hidden bg-white border-b border-brand-100 px-4 py-3.5 flex justify-between items-center sticky top-0 z-30 shadow-xs w-full">
+        <div className="flex items-center gap-2">
+          <MamiHubLogo size="sm" />
+          <span className="px-1.5 py-0.5 rounded-xs bg-brand-50 text-brand-800 text-[9px] font-bold uppercase tracking-wider">ADMIN</span>
+        </div>
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-1.5 px-3 rounded-lg border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          <span className="text-xs font-semibold">Menu</span>
+        </button>
+      </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2.5">
-                <img
-                  src={currentUser?.avatar}
-                  alt={currentUser?.name}
-                  referrerPolicy="no-referrer"
-                  className="w-8.5 h-8.5 rounded-full border border-pink-200 object-cover shadow-inner"
-                />
-                <div className="hidden sm:block text-right">
-                  <h4 className="text-xs font-semibold text-neutral-800 leading-tight">{currentUser?.name}</h4>
-                  <p className="text-[10px] text-neutral-400 font-mono">Global Operations Director</p>
-                </div>
-              </div>
-              
-              <button 
-                onClick={() => setShowSupabaseHub(true)}
-                className="px-3 py-1 text-xs font-semibold rounded-lg border border-[#3ecf8e]/30 bg-[#3ecf8e]/10 hover:bg-[#3ecf8e]/20 text-neutral-800 hover:text-black transition-all flex items-center gap-1 shadow-xs"
-                id="header-open-supabase-btn-admin"
-              >
-                <CloudLightning className="w-3.5 h-3.5 text-[#3ecf8e] animate-pulse" />
-                <span>Supabase Secure Hub</span>
-              </button>
-
-              <button 
-                onClick={logout}
-                className="p-1 px-3 text-xs font-medium text-neutral-500 hover:text-rose-600 border border-neutral-200 hover:border-rose-100 rounded-lg transition-all flex items-center gap-1.5 bg-neutral-50 hover:bg-rose-50/20"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
+      {/* LEFT SIDEBAR (Sticky on desktop, slide-over drawer on mobile) */}
+      {/* Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-neutral-950/40 z-20 md:hidden backdrop-blur-xs transition-opacity" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      
+      <aside className={`fixed inset-y-0 left-0 bg-slate-900 text-slate-200 flex flex-col justify-between shrink-0 h-full z-30 border-r border-slate-800 transition-all duration-300 md:sticky md:translate-x-0 ${isSidebarOpen ? 'translate-x-0 w-64 shadow-2xl' : '-translate-x-full md:w-64 md:translate-x-0 w-0'}`}>
+        <div className="flex flex-col flex-1 p-5 overflow-y-auto">
+          {/* Logo Section */}
+          <div className="flex items-center gap-3 pb-5 border-b border-slate-800 mb-6">
+            <MamiHubLogo size="sm" light />
+            <div className="min-w-0">
+              <span className="px-1.5 py-0.5 rounded bg-brand-500/10 text-[#3ecf8e] border border-[#3ecf8e]/30 text-[9px] font-bold uppercase tracking-widest block w-max">GLOBAL ADMIN</span>
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{totalRegistered} Brands Active</p>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Admin Workspaces container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Current User Card */}
+          <div className="bg-slate-800/60 rounded-xl p-3 mb-6 border border-slate-850 flex items-center gap-2.5">
+            <img
+              src={currentUser?.avatar}
+              alt={currentUser?.name}
+              referrerPolicy="no-referrer"
+              className="w-8.5 h-8.5 rounded-full border border-pink-500/30 object-cover shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <h4 className="text-xs font-bold text-white truncate leading-tight">{currentUser?.name}</h4>
+              <p className="text-[9px] text-slate-400 font-mono mt-0.5">OPS DIRECTOR</p>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-1">
+            <span className="block text-[9px] uppercase font-semibold tracking-widest text-slate-500 mb-2 px-1">Main Console</span>
+            {[
+              { id: 'analytics', label: 'Global Analytics', desc: 'Strategy desk & AI brief', icon: LayoutDashboard },
+              { id: 'personnel', label: 'User Management', desc: 'Field officer metrics', icon: Users },
+              { id: 'audit_logs', label: 'System Audit Trail', desc: 'Security actions ledger', icon: ScrollText },
+              { id: 'pdf_exports', label: 'PDF Reports Console', desc: 'Compile partner dossiers', icon: FileDown },
+              { id: 'settings', label: 'Admin Settings', desc: 'Threshold & seeding controls', icon: Settings },
+            ].map(item => {
+              const Icon = item.icon;
+              const active = activeSubTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveSubTab(item.id as any);
+                    setIsSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left select-none transition-all group cursor-pointer ${
+                    active 
+                      ? 'bg-brand-600 font-bold text-white shadow-xs' 
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 transition-transform ${active ? 'scale-110 text-white' : 'text-slate-400 group-hover:scale-105'}`} />
+                  <div className="min-w-0">
+                    <span className="block text-xs font-semibold leading-tight">{item.label}</span>
+                    <span className={`block text-[8.5px] truncate mt-0.5 ${active ? 'text-brand-100' : 'text-slate-500'}`}>{item.desc}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Bottom Controls */}
+          <div className="pt-6 border-t border-slate-800 mt-auto space-y-3">
+            <button 
+              onClick={logout}
+              className="w-full px-3 py-2 bg-slate-800 hover:bg-rose-950/20 text-slate-400 hover:text-rose-400 border border-slate-750 hover:border-rose-900/30 rounded-xl transition-all flex items-center gap-2 text-xs font-semibold uppercase tracking-wider cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Disconnect</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* RIGHT WORKSPACE STREAM */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         
-        {/* Navigation tabs for admin */}
-        <div className="flex border-b border-neutral-200 mb-6 gap-6">
-          <button
-            onClick={() => setActiveSubTab('analytics')}
-            className={`pb-3 text-sm font-semibold tracking-wide transition-all border-b-2 ${
-              activeSubTab === 'analytics' ? 'border-brand-500 text-brand-600 font-bold' : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <LayoutDashboard className="w-4 h-4" />
-              Global Onboarding Funnel (AI Briefing)
+        {/* Top Header of Right Workspace Panel (Desktop only) */}
+        <header className="hidden md:block bg-white border-b border-brand-100 sticky top-0 z-10 py-3.5 px-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-sm font-black text-neutral-900 uppercase tracking-wide">
+                {activeSubTab === 'analytics' && '📈 Operations & AI Strategy Analysis'}
+                {activeSubTab === 'personnel' && '👥 Personnel & User Management'}
+                {activeSubTab === 'audit_logs' && '📜 System Security Audit Trail'}
+                {activeSubTab === 'pdf_exports' && '📥 Region & Partner Reports Exporter'}
+                {activeSubTab === 'settings' && '🛠️ Admin System Settings'}
+              </h2>
+              <p className="text-[10px] text-neutral-400 font-mono mt-0.5">MamiHubs Global Command Centre</p>
             </div>
-          </button>
 
-          <button
-            onClick={() => setActiveSubTab('personnel')}
-            className={`pb-3 text-sm font-semibold tracking-wide transition-all border-b-2 ${
-              activeSubTab === 'personnel' ? 'border-brand-500 text-brand-600 font-bold' : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Field Officer Ranks & Metrics
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-brand-50 border border-brand-100 text-[9px] font-bold text-brand-700 font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                SECURE CONSOLE ACTIVE
+              </span>
             </div>
-          </button>
+          </div>
+        </header>
 
-          <button
-            onClick={() => setActiveSubTab('audit_logs')}
-            className={`pb-3 text-sm font-semibold tracking-wide transition-all border-b-2 ${
-              activeSubTab === 'audit_logs' ? 'border-brand-500 text-brand-600 font-bold' : 'border-transparent text-neutral-500 hover:text-neutral-800'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <ScrollText className="w-4 h-4" />
-              Systemic Audit Trail
-            </div>
-          </button>
-
-          <button
-            onClick={() => { setActiveSubTab('pdf_exports'); setSelectedPdfRegion(''); setSelectedPdfVendorId(''); setExportNotification(''); }}
-            className={`pb-3 text-sm font-semibold tracking-wide transition-all border-b-2 ${
-              activeSubTab === 'pdf_exports' ? 'border-brand-500 text-brand-600 font-bold' : 'border-transparent text-neutral-400 hover:text-neutral-800'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <FileDown className="w-4 h-4 text-emerald-600 animate-pulse" />
-              <span>PDF Reports Export Center</span>
-            </div>
-          </button>
-        </div>
+        <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
 
         {/* Global KPI cards - stays across tabs for global overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
@@ -877,14 +909,175 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
-      </main>
 
-      {/* Supabase Integration Hub Model Slider overlay */}
-      {showSupabaseHub && (
-        <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <SupabaseSyncPanel onClose={() => setShowSupabaseHub(false)} />
-        </div>
-      )}
+        {/* TAB settings */}
+        {activeSubTab === 'settings' && (
+          <div className="space-y-6 animate-in fade-in duration-250">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Rules & Policies */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-xs">
+                  <div className="border-b border-neutral-100 pb-3 mb-4 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-display font-semibold text-neutral-800 text-sm uppercase">Operational Automation Rules</h3>
+                      <p className="text-xs text-neutral-500">Enable algorithmic controls for Nigerian Hub registration</p>
+                    </div>
+                    <Settings className="w-5 h-5 text-brand-600" />
+                  </div>
+
+                  <div className="space-y-4 pt-1">
+                    <label className="flex items-start gap-3 p-3 hover:bg-neutral-50 rounded-xl border border-neutral-100 transition-all cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        id="setting-auto-approve-sku"
+                        checked={autoApprove} 
+                        onChange={(e) => setAutoApprove(e.target.checked)}
+                        className="mt-0.5 rounded-sm border-neutral-300 text-brand-600 focus:ring-brand-500/40"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-neutral-800">Automatic Maternal SKUs Validation Approval</span>
+                        <span className="block text-[10px] text-neutral-500 mt-0.5 leading-relaxed">Skip manual verification queues for trusted organic categories (baby foods, botanical nursing tonics)</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-3 p-3 hover:bg-neutral-50 rounded-xl border border-neutral-100 transition-all cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        id="setting-gps-required"
+                        checked={gpsRequired} 
+                        onChange={(e) => setGpsRequired(e.target.checked)}
+                        className="mt-0.5 rounded-sm border-neutral-300 text-brand-600 focus:ring-brand-500/40"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-neutral-800">Strict Geo-Location & GPS Telemetry Checkpoint</span>
+                        <span className="block text-[10px] text-neutral-500 mt-0.5 leading-relaxed">Require field personnel to submit absolute coordinates matching registered market stalls</span>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-3 p-3 hover:bg-neutral-50 rounded-xl border border-neutral-100 transition-all cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        id="setting-dual-approval"
+                        checked={dualApproval} 
+                        onChange={(e) => setDualApproval(e.target.checked)}
+                        className="mt-0.5 rounded-sm border-neutral-300 text-brand-600 focus:ring-brand-500/40"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-neutral-800">Enforce Dual-Supervisor Escrow Sign-Off</span>
+                        <span className="block text-[10px] text-neutral-500 mt-0.5 leading-relaxed">High-threshold vendors must carry two independent supervisor audits before becoming fully live</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-xs">
+                  <div className="border-b border-neutral-100 pb-3 mb-4">
+                    <h3 className="font-display font-semibold text-neutral-800 text-sm uppercase">Target Regional Quotas</h3>
+                    <p className="text-xs text-neutral-500">Configure target metrics for automated performance ratings</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-semibold text-neutral-700">Completions Conversion target</span>
+                        <span className="text-xs font-extrabold text-brand-600 font-mono">{targetCompletions}%</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="50" 
+                        max="100" 
+                        value={targetCompletions} 
+                        onChange={(e) => setTargetCompletions(e.target.value)}
+                        className="w-full accent-brand-600 cursor-pointer h-1.5 bg-neutral-100 rounded-lg"
+                      />
+                      <p className="text-[10px] text-neutral-400 mt-1">Sets the baseline for green indicator scores across regional dashboards</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-1">
+                      <div>
+                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Default currency denomination</label>
+                        <select className="w-full text-xs p-2.5 bg-neutral-50 border border-neutral-200 rounded-lg font-bold">
+                          <option value="NGN">NGN (₦) - Nigerian Naira</option>
+                          <option value="USD">USD ($) - United States Dollar</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Max Products Limit per seller</label>
+                        <input type="number" defaultValue="50" className="w-full text-xs p-2.5 bg-neutral-50 border border-neutral-200 rounded-lg font-bold" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Seeding & System reset controls */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-xs">
+                  <h3 className="font-display font-medium text-neutral-800 text-xs tracking-wider uppercase mb-2">Sandbox System Reset</h3>
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Clear locally saved test transactions, register states, training completions, or restore raw Nigerian market cluster seeding models.
+                  </p>
+
+                  <div className="space-y-3 pt-4">
+                    <button 
+                      onClick={() => {
+                        localStorage.removeItem('m_vendors');
+                        localStorage.removeItem('m_complaints');
+                        localStorage.removeItem('m_visits');
+                        localStorage.removeItem('m_audits');
+                        alert('Sandbox Cache Cleared! Please reload the applet to reload primary mock records.');
+                        window.location.reload();
+                      }}
+                      className="w-full text-center bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold py-2.5 rounded-xl transition-all active:scale-98 cursor-pointer"
+                      id="reset-sandbox-data-btn"
+                    >
+                      Empty Local Cache Database
+                    </button>
+                    <p className="text-[9.5px] text-rose-500/80 leading-tight">
+                      * Triggers complete eviction of local storage variables. Does not affect Supabase.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 rounded-xl p-6 text-white border border-slate-800 shadow-md">
+                  <span className="px-1.5 py-0.5 rounded bg-[#3ecf8e]/10 text-[#3ecf8e] text-[9.5px] font-mono border border-[#3ecf8e]/20 uppercase">
+                    Platform Status
+                  </span>
+                  <h4 className="text-sm font-bold mt-2.5 flex items-center gap-1.5">
+                    <Activity className="w-4 h-4 text-[#3ecf8e] animate-pulse" />
+                    Distributed Gateway Status
+                  </h4>
+                  
+                  <div className="space-y-2 text-xs pt-4 font-mono text-neutral-300">
+                    <div className="flex justify-between border-b border-slate-800 pb-1.5">
+                      <span>Server Gateway:</span>
+                      <span className="text-emerald-400 font-bold">ONLINE</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-800 pb-1.5">
+                      <span>AI Engine Response:</span>
+                      <span className="text-emerald-400 font-bold">STABLE</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Sync Engine:</span>
+                      <span className={supabaseEnabled ? 'text-[#3ecf8e] font-bold' : 'text-amber-500 font-bold'}>
+                        {supabaseEnabled ? 'MIRROR ACTIVE' : 'OFFLINE SANDBOX'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
+
+    {/* Supabase Integration Hub Model Slider overlay */}
+    {showSupabaseHub && (
+      <div className="fixed inset-0 z-50 bg-neutral-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <SupabaseSyncPanel onClose={() => setShowSupabaseHub(false)} />
+      </div>
+    )}
+  </div>
   );
 }

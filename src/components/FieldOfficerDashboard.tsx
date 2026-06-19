@@ -217,14 +217,7 @@ export default function FieldOfficerDashboard() {
                 </div>
               </div>
 
-              <button 
-                onClick={() => setShowSupabaseHub(true)}
-                className="px-3 py-1 text-xs font-semibold rounded-lg border border-[#3ecf8e]/30 bg-[#3ecf8e]/10 hover:bg-[#3ecf8e]/20 text-neutral-800 hover:text-black transition-all flex items-center gap-1 shadow-xs"
-                id="header-open-supabase-btn-officer"
-              >
-                <CloudLightning className="w-3.5 h-3.5 text-[#3ecf8e] animate-pulse" />
-                <span>Supabase Secure Hub</span>
-              </button>
+
 
               <button 
                 onClick={logout}

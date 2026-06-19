@@ -63,6 +63,13 @@ export default function SupabaseSyncPanel({ onClose }: SupabaseSyncPanelProps) {
   // General Notification state
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const hasSchemaError = supabaseLogs.some(log => 
+    log.toLowerCase().includes('schema cache') || 
+    log.toLowerCase().includes('not find the table') || 
+    log.toLowerCase().includes('schema deployed') ||
+    (log.toLowerCase().includes('relation') && log.toLowerCase().includes('does not exist'))
+  );
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -237,6 +244,35 @@ export default function SupabaseSyncPanel({ onClose }: SupabaseSyncPanelProps) {
         {/* TAB 1: SYNC & LOCAL CONNECTION */}
         {activeTab === 'sync' && (
           <div className="space-y-6">
+            {hasSchemaError && (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-800 space-y-2.5 animate-in slide-in-from-top duration-300">
+                <div className="flex items-center gap-2 font-bold text-rose-950">
+                  <Lock className="w-4 h-4 text-rose-650 shrink-0" />
+                  <span>Supabase Schema Cache / Missing Table Detected</span>
+                </div>
+                <p className="leading-relaxed text-[11px] text-rose-700">
+                  Your connected Supabase database is missing the necessary onboarding tables (such as <code>audit_logs</code> or <code>vendors</code>), or the database gateway schema cache is stale.
+                </p>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  <button 
+                    onClick={() => setActiveTab('schema')}
+                    className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg transition-all text-[10px] cursor-pointer"
+                  >
+                    Go to Postgres SQL Setup
+                  </button>
+                  <button
+                    onClick={() => handleCopy(SUPABASE_SQL_SCHEMA, 'alert-sql')}
+                    className="px-2.5 py-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 font-bold rounded-lg transition-all text-[10px] flex items-center gap-1 cursor-pointer"
+                  >
+                    {copiedId === 'alert-sql' ? 'Copied DDL!' : 'Copy SQL Schema'}
+                  </button>
+                </div>
+                <div className="text-[10px] text-neutral-500 italic mt-0.5 font-mono">
+                  💡 Fix: Run the SQL DDL Schema in the Supabase SQL Editor, then execute: <code className="bg-neutral-100 px-1 rounded border border-neutral-200 text-rose-600 font-bold">NOTIFY pgrst, 'reload schema';</code> to reload the cache immediately!
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column: API Form */}
               <div className="space-y-4">

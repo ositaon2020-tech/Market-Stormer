@@ -20,7 +20,7 @@ interface OnboardingContextProps {
   auditLogs: AuditLog[];
   supabaseEnabled: boolean;
   supabaseLogs: string[];
-  login: (email: string) => boolean;
+  login: (email: string, customProfile?: { name: string; role: 'field_personnel' | 'supervisor' | 'admin'; region?: string; avatar?: string }) => boolean;
   logout: () => void;
   registerVendor: (vendorData: { name: string; ownerName: string; phone: string; email: string; hubRegion: string; category: string; city: string; fieldOfficerId: string }) => Vendor;
   updateVendorChecklist: (vendorId: string, key: keyof Vendor['checklist'], checked: boolean) => void;
@@ -238,7 +238,14 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       addLog(`✓ Supabase background sync: Table [${tableName}] mirrored successfully.`);
     } catch (err: any) {
       console.warn(`Supabase background sync for ${tableName} failed/skipped:`, err.message);
-      addLog(`⚡ Supabase sync skipped: Table [${tableName}] (${err.message.slice(0, 30)}...). Is schema deployed?`);
+      const isSchemaCacheError = err.message.toLowerCase().includes('schema cache') || 
+                                 err.message.toLowerCase().substring(0, 40).includes('could not find the table') ||
+                                 err.message.toLowerCase().includes('does not exist');
+      if (isSchemaCacheError) {
+        addLog(`❌ Supabase Sync Failed: Table [${tableName}] missing in Supabase. Paste Postgres DDL from 'Postgres SQL Setup' tab in Supabase Sync Panel and run it, then run: NOTIFY pgrst, 'reload schema';`);
+      } else {
+        addLog(`⚡ Supabase sync skipped: Table [${tableName}] (${err.message.slice(0, 45)}...). Is schema deployed?`);
+      }
     }
   };
 
@@ -321,9 +328,25 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     saveState('m_audits', updated);
   };
 
-  const login = (email: string): boolean => {
+  const login = (email: string, customProfile?: { name: string; role: 'field_personnel' | 'supervisor' | 'admin'; region?: string; avatar?: string }): boolean => {
     const normalizedEmail = email.trim().toLowerCase();
-    const found = users.find(u => u.email.toLowerCase() === normalizedEmail);
+    let found = users.find(u => u.email.toLowerCase() === normalizedEmail);
+
+    if (!found && customProfile) {
+      const newUser: User = {
+        id: `u-${Date.now()}`,
+        email: normalizedEmail,
+        name: customProfile.name || email.split('@')[0],
+        role: customProfile.role,
+        region: customProfile.region || 'East Region',
+        avatar: customProfile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedEmail)}`,
+      };
+      const updatedUsers = [...users, newUser];
+      setUsers(updatedUsers);
+      saveState('m_users', updatedUsers);
+      found = newUser;
+    }
+
     if (found) {
       setCurrentUser(found);
       saveState('m_curr_user', found);
