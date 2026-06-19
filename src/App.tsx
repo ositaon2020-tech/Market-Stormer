@@ -38,22 +38,6 @@ export default function App() {
         <div className="flex-1">
           <DashboardSwitcher />
         </div>
-
-        {/* Humid Sandbox footer banner */}
-        <footer className="bg-neutral-900 text-neutral-400 py-3 border-t border-neutral-800 text-center text-xs font-sans">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <p className="font-medium text-[11px] leading-relaxed">
-              MamiHubs™ Vendor Onboarding Platform Sandbox • Cloud Run Full-Stack Environment
-            </p>
-            <div className="flex items-center justify-center gap-4 text-[10px] text-neutral-500 font-medium">
-              <span className="flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-brand-400" />
-                Gemini 2.5 Flash suggestions active
-              </span>
-              <span>UTC Logs standard</span>
-            </div>
-          </div>
-        </footer>
       </div>
     </OnboardingProvider>
   );
