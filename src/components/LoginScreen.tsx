@@ -26,7 +26,7 @@ type PortalRole = 'field_personnel' | 'supervisor' | 'admin';
 export default function LoginScreen() {
   const { login } = useOnboarding();
   const [selectedPortal, setSelectedPortal] = useState<PortalRole | null>(null);
-  const [activeTab, setActiveTab] = useState<'supabase' | 'demo'>('demo');
+  const [activeTab, setActiveTab] = useState<'supabase' | 'demo'>('supabase');
   const [isSignUp, setIsSignUp] = useState(false);
   
   // Standard Auth form inputs
@@ -229,12 +229,10 @@ export default function LoginScreen() {
               <h2 className="text-sm font-semibold text-neutral-700 mt-2">
                 Select your secure portal access point below
               </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            </div>             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* FIELD OFFICER CARD */}
               <button 
-                onClick={() => { setSelectedPortal('field_personnel'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('demo'); }}
+                onClick={() => { setSelectedPortal('field_personnel'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('supabase'); }}
                 className="group p-6 border border-sky-100 hover:border-sky-300 bg-sky-50/5 hover:bg-sky-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden cursor-pointer"
                 id="portal-select-officer"
               >
@@ -260,7 +258,7 @@ export default function LoginScreen() {
 
               {/* SUPERVISOR CARD */}
               <button 
-                onClick={() => { setSelectedPortal('supervisor'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('demo'); }}
+                onClick={() => { setSelectedPortal('supervisor'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('supabase'); }}
                 className="group p-6 border border-emerald-100 hover:border-emerald-300 bg-emerald-50/5 hover:bg-emerald-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden cursor-pointer"
                 id="portal-select-supervisor"
               >
@@ -286,7 +284,7 @@ export default function LoginScreen() {
 
               {/* ADMIN CARD */}
               <button 
-                onClick={() => { setSelectedPortal('admin'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('demo'); }}
+                onClick={() => { setSelectedPortal('admin'); setEmail(''); setPassword(''); setName(''); setPhone(''); setError(''); setSuccessMsg(''); setActiveTab('supabase'); }}
                 className="group p-6 border border-rose-100 hover:border-rose-300 bg-rose-50/5 hover:bg-rose-50/20 rounded-xl transition-all text-left flex flex-col justify-between h-full relative overflow-hidden cursor-pointer"
                 id="portal-select-admin"
               >
@@ -345,33 +343,7 @@ export default function LoginScreen() {
               </p>
             </div>
 
-            {/* Custom dual Mode authentication tabs */}
-            <div className="flex border border-neutral-200 mb-6 bg-neutral-50 p-1 rounded-xl">
-              <button
-                type="button"
-                onClick={() => { setActiveTab('supabase'); setError(''); setSuccessMsg(''); }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  activeTab === 'supabase'
-                    ? 'bg-neutral-900 text-white shadow-xs'
-                    : 'text-neutral-500 hover:text-neutral-900'
-                }`}
-                id="tab-select-supabase-auth"
-              >
-                🔐 Supabase Database Auth
-              </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab('demo'); setError(''); setSuccessMsg(''); }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  activeTab === 'demo'
-                    ? 'bg-neutral-900 text-white shadow-xs'
-                    : 'text-neutral-500 hover:text-neutral-900'
-                }`}
-                id="tab-select-sandbox-auth"
-              >
-                ⚡ Sandbox Bypass
-              </button>
-            </div>
+            {/* Only Supabase Auth is active and enforced */}
 
             {/* NOTIFICATORS */}
             {error && (
@@ -395,7 +367,7 @@ export default function LoginScreen() {
                   <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] leading-relaxed text-amber-800 flex gap-1.5 mb-4">
                     <span>⚠️</span>
                     <p className="flex-1">
-                      <strong>Supabase is currently offline.</strong> Secure connection keys are unconfigured. To test real-time accounts database registration, provide keys in your local variables or use the <strong>Sandbox Bypass</strong> tab.
+                      <strong>Supabase is currently unconfigured.</strong> Credentials metadata and secure keys are required. Please provide valid connection variables inside your system settings to initialize authentic database pipelines.
                     </p>
                   </div>
                 )}
@@ -544,123 +516,7 @@ export default function LoginScreen() {
                   </button>
                 </form>
               </div>
-            ) : (
-              /* SANDBOX PASSKEY BYPASS MODE (PREVIOUS CODE) */
-              <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <form onSubmit={handleSandboxSubmit} className="space-y-4">
-                  <div>
-                    <label htmlFor="p_email" className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
-                      Coordinator Identity Email
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <input
-                        id="p_email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setError('');
-                        }}
-                        className="w-full pl-9 pr-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm font-medium transition-all"
-                        placeholder={
-                          selectedPortal === 'admin' ? 'admin@mamihubs.com' :
-                          selectedPortal === 'supervisor' ? 'sarah@mamihubs.com' :
-                          'david@mamihubs.com'
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-1.5">
-                      Decentralized Sandbox Token
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="password"
-                        disabled
-                        value="••••••••••••••"
-                        className="w-full pl-9 pr-4 py-2.5 bg-neutral-50/50 border border-neutral-100 rounded-xl text-sm text-neutral-400 select-none cursor-not-allowed"
-                      />
-                    </div>
-                    <p className="text-[10px] text-neutral-400 mt-1.5 italic">
-                      * Passwordless secure sandbox bypass active.
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className={`w-full text-white font-semibold text-sm py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-75 focus:outline-hidden focus:ring-2 focus:ring-offset-2 cursor-pointer ${
-                      selectedPortal === 'admin' ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-400' :
-                      selectedPortal === 'supervisor' ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-400' :
-                      'bg-sky-600 hover:bg-sky-700 focus:ring-sky-400'
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        Decrypt Console Entry
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                {/* Quick login select list (Authorized Port profiles) */}
-                <div className="mt-8 pt-6 border-t border-neutral-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                      Authorized Port profiles
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-brand-50 text-[9px] text-brand-700 font-bold border border-brand-100">
-                      <Sparkles className="w-3 h-3 animate-pulse" /> Sandbox
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {activeDemoUsers.map((user) => (
-                      <button
-                        key={user.id}
-                        onClick={() => handleQuickLogin(user.email)}
-                        disabled={isLoading}
-                        className="w-full text-left flex items-center justify-between p-2.5 rounded-xl border border-neutral-100 hover:border-brand-200 bg-neutral-50/50 hover:bg-white transition-all group cursor-pointer"
-                        id={`demo-user-button-${user.id}`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            referrerPolicy="no-referrer"
-                            className="w-7 h-7 rounded-full border border-neutral-200 object-cover"
-                          />
-                          <div>
-                            <h4 className="text-xs font-semibold text-neutral-800 leading-tight group-hover:text-brand-600 transition-colors">
-                              {user.name}
-                            </h4>
-                            <p className="text-[10px] text-neutral-400 font-mono">
-                              {user.email}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="inline-block px-1.5 py-0.5 rounded-xs text-[9px] font-bold text-neutral-500 bg-neutral-100 border border-neutral-200 font-mono">
-                            {user.region}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         )}
       </div>

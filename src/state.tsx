@@ -66,8 +66,22 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSupabaseLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 49)]);
   };
 
-  // Initialize and load state from localStorage
+  // Initialize and load state from localStorage (with automated Supabase pull if set)
   useEffect(() => {
+    // One-time hard reset of old sandbox/mock items to fulfill "clear all sandbox data" request
+    const sandboxCleared = localStorage.getItem('m_sandbox_cleared_v3');
+    if (!sandboxCleared) {
+      localStorage.removeItem('m_users');
+      localStorage.removeItem('m_vendors');
+      localStorage.removeItem('m_visits');
+      localStorage.removeItem('m_complaints');
+      localStorage.removeItem('m_reports');
+      localStorage.removeItem('m_courses');
+      localStorage.removeItem('m_audits');
+      localStorage.removeItem('m_curr_user');
+      localStorage.setItem('m_sandbox_cleared_v3', 'true');
+    }
+
     const localUsers = localStorage.getItem('m_users');
     const localVendors = localStorage.getItem('m_vendors');
     const localVisits = localStorage.getItem('m_visits');
@@ -78,56 +92,67 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const localUser = localStorage.getItem('m_curr_user');
 
     if (localUsers) setUsers(JSON.parse(localUsers));
-    else {
-      setUsers(DEMO_USERS);
-      localStorage.setItem('m_users', JSON.stringify(DEMO_USERS));
-    }
+    else setUsers([]);
 
     if (localVendors) setVendors(JSON.parse(localVendors));
-    else {
-      setVendors(DEMO_VENDORS);
-      localStorage.setItem('m_vendors', JSON.stringify(DEMO_VENDORS));
-    }
+    else setVendors([]);
 
     if (localVisits) setVisits(JSON.parse(localVisits));
-    else {
-      setVisits(DEMO_VISITS);
-      localStorage.setItem('m_visits', JSON.stringify(DEMO_VISITS));
-    }
+    else setVisits([]);
 
     if (localComplaints) setComplaints(JSON.parse(localComplaints));
-    else {
-      setComplaints(DEMO_COMPLAINTS);
-      localStorage.setItem('m_complaints', JSON.stringify(DEMO_COMPLAINTS));
-    }
+    else setComplaints([]);
 
     if (localReports) setReports(JSON.parse(localReports));
-    else {
-      setReports(DEMO_REPORTS);
-      localStorage.setItem('m_reports', JSON.stringify(DEMO_REPORTS));
-    }
+    else setReports([]);
 
     if (localCourses) setCourses(JSON.parse(localCourses));
-    else {
-      setCourses(DEMO_COURSES);
-      localStorage.setItem('m_courses', JSON.stringify(DEMO_COURSES));
-    }
+    else setCourses([]);
 
     if (localAudits) setAuditLogs(JSON.parse(localAudits));
-    else {
-      setAuditLogs(DEMO_AUDIT_LOGS);
-      localStorage.setItem('m_audits', JSON.stringify(DEMO_AUDIT_LOGS));
-    }
+    else setAuditLogs([]);
 
     if (localUser) {
       setCurrentUser(JSON.parse(localUser));
     }
 
-    // Load initial Supabase enablement status
+    // Load initial Supabase enablement status and self-execute direct pull instantly
     const config = getSupabaseConfig();
     setRawSupabaseEnabled(config.enabled);
     if (config.enabled) {
-      addLog(`Supabase mirror configured to server at ${config.url.slice(0, 25)}...`);
+      addLog(`Connecting directly to live Supabase server. Pulling authentic data streams...`);
+      pullStateFromSupabase().then(result => {
+        if (result.success && result.data) {
+          const { users: u, vendors: v, visits: vi, complaints: c, reports: r, courses: co, auditLogs: al } = result.data;
+          
+          setUsers(u || []);
+          localStorage.setItem('m_users', JSON.stringify(u || []));
+
+          setVendors(v || []);
+          localStorage.setItem('m_vendors', JSON.stringify(v || []));
+
+          setVisits(vi || []);
+          localStorage.setItem('m_visits', JSON.stringify(vi || []));
+
+          setComplaints(c || []);
+          localStorage.setItem('m_complaints', JSON.stringify(c || []));
+
+          setReports(r || []);
+          localStorage.setItem('m_reports', JSON.stringify(r || []));
+
+          setCourses(co || []);
+          localStorage.setItem('m_courses', JSON.stringify(co || []));
+
+          setAuditLogs(al || []);
+          localStorage.setItem('m_audits', JSON.stringify(al || []));
+          
+          addLog('✓ Synchronized and successfully initialized with live Supabase database.');
+        } else {
+          addLog('⚡ Supabase was reachable or empty. No initial data streams pulled.');
+        }
+      }).catch(err => {
+        addLog(`⚡ Initial pull failure: ${err.message}`);
+      });
     }
   }, []);
 
