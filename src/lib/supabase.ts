@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { User, Vendor, WeeklyVisit, Complaint, DailyReport, TrainingCourse, AuditLog } from '../types';
 
@@ -12,8 +13,8 @@ const LOCAL_STORAGE_ANON_KEY = 'm_supabase_anon_key';
 const LOCAL_STORAGE_ENABLED_KEY = 'm_supabase_enabled';
 
 // Extract environment variables for standard integration safely
-const envUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-const envKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Initialize and export direct client
 export const supabase = createClient(
