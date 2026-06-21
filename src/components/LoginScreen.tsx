@@ -214,9 +214,7 @@ export default function LoginScreen() {
           <h1 className="font-display text-2xl font-black tracking-tight text-neutral-900 uppercase">
             Onboarding Coordination Command
           </h1>
-          <p className="text-xs text-neutral-500 mt-1.5 font-mono max-w-lg mx-auto">
-            Decentralized multi-role coordinate orchestration ledger for Nigerian trade clusters
-          </p>
+
         </div>
 
         {!selectedPortal ? (
