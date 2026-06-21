@@ -26,12 +26,21 @@ export const supabase = createClient(
 export function getSupabaseConfig(): SupabaseConfig {
   const localUrl = localStorage.getItem(LOCAL_STORAGE_URL_KEY) || '';
   const localKey = localStorage.getItem(LOCAL_STORAGE_ANON_KEY) || '';
-  const localEnabled = localStorage.getItem(LOCAL_STORAGE_ENABLED_KEY) === 'true';
+  const localEnabledStr = localStorage.getItem(LOCAL_STORAGE_ENABLED_KEY);
+
+  const hasEnvCredentials = !!(
+    envUrl && 
+    envKey && 
+    !envUrl.includes('placeholder-project-id') && 
+    envKey !== 'placeholder-anon-key'
+  );
+
+  const localEnabled = localEnabledStr !== null ? localEnabledStr === 'true' : true;
 
   return {
-    url: localUrl || envUrl,
-    anonKey: localKey || envKey,
-    enabled: localEnabled || !!(localUrl || envUrl),
+    url: envUrl || localUrl,
+    anonKey: envKey || localKey,
+    enabled: hasEnvCredentials ? true : (localEnabled || !!(localUrl && localKey)),
   };
 }
 
